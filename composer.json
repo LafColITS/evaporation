@@ -1,0 +1,23 @@
+{
+    "name": "lafayette-college/evaporation",
+    "description": "CloudFront cache invalidation plugin for WordPress",
+    "type": "wordpress-plugin",
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "Charles Fulton",
+            "email": "fultonc@lafayette.edu"
+        }
+    ],
+    "require": {
+        "aws/aws-sdk-php": "^3.3"
+    },
+    "scripts": {
+        "pre-autoload-dump": "Aws\\Script\\Composer\\Composer::removeUnusedServices"
+    },
+    "extra": {
+        "aws/aws-sdk-php": [
+            "CloudFront"
+        ]
+    }
+}
