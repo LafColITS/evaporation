@@ -12,6 +12,7 @@
  * @package         Evaporation
  */
 
-require( 'includes/class-base.php' );
+require 'vendor/autoload.php';
+require 'includes/class-base.php';
 
 add_action( 'init', array( 'Evaporation\Base' , 'init_action' ) );
