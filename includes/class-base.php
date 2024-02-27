@@ -9,6 +9,8 @@
 namespace Evaporation;
 
 use Aws\CloudFront\CloudFrontClient;
+use Aws\CloudFront\Exception\CloudFrontException;
+use Aws\Exception\CredentialsException;
 
 /**
  * Base functions.
@@ -51,7 +53,16 @@ class Base {
         }
 
         // Do not invalidate auto-drafts.
-        if ( 'auto-draft' === $new_status ) {
+        if ( 'auto-draft' === $new_status || ( 'auto-draft' === $old_status && 'draft' === $new_status ) ) {
+            return;
+        }
+
+        // Do not invalidate edits to unpublished posts.
+        if ( $new_status === $old_status && ( 'publish' !== $new_status ) ) {
+            return;
+        }
+
+        if( is_int( wp_is_post_autosave( $post ) ) || is_int( wp_is_post_revision( $post ) ) ) {
             return;
         }
 
@@ -64,6 +75,17 @@ class Base {
             return;
         }
 
+        self::invalidate_post( $post );
+    }
+
+    public static function changed_site() {
+        self::invalidate_site();
+    }
+
+    /**
+     * Invalidate a post. Builds a list of URLs to invalidate.
+     */
+    public static function invalidate_post( $post ) {
         $permalink = get_permalink( $post );
 
         // Sanitize permalink for trashed post.
@@ -71,16 +93,18 @@ class Base {
             $permalink = str_replace('__trashed', '', $permalink);
         }
 
-        // Get the actual relative URL for invalidation.
-        $url_to_invalidate = wp_make_link_relative( $permalink );
+        $urls = array_merge( [ $permalink ], self::get_related_urls( $post ) );
+        $urls_to_invalidate = array_map( 'wp_make_link_relative', $urls );
 
-        self::invalidate_post( [ $url_to_invalidate ] );
+        if ( in_array( "", $urls_to_invalidate) ) {
+            self::write_log( "Request to invalidate {$permalink} requires full site purge" );
+            self::invalidate_site();
+        } else {
+            self::invalidate_urls( $urls_to_invalidate );
+        }
     }
 
-    /**
-     * Invalidate a post.
-     */
-    public static function invalidate_post( $urls, $caller_reference = '' ) {
+    protected static function invalidate_urls( $urls, $caller_reference = '' ) {
         // Create the caller reference if not set.
         if ( ! $caller_reference ) {
             $caller_reference = self::get_caller_reference( $urls );
@@ -88,26 +112,58 @@ class Base {
 
         self::write_log( "Invalidation for " . json_encode($urls) . " with caller reference {$caller_reference}" );
 
-        // Get the client.
-        $client = self::get_aws_client();
-        $result = $client->createInvalidation([
-            'DistributionId' => self::get_distribution_id(),
-            'InvalidationBatch' => [
-                'CallerReference' => $caller_reference,
-                'Paths' => [
-                    'Items' => $urls,
-                    'Quantity' => count( $urls ),
-                ],
-            ],
-        ]);
+        // Trigger the invalidation.
+        self::create_invalidation( $urls, $caller_reference );
     }
 
-    protected static function get_aws_client() {
-        $cloudfront_client = new CloudFrontClient([
-            'region' =>  self::get_aws_region(),
-            'version' => '2020-05-31',
-        ]);
-        return $cloudfront_client;
+    protected static function get_related_urls( $post ) {
+        $urls = [];
+
+        // Logic derived from wp-cloudflare-page-cache
+        // Taxonomies.
+        $object_taxonomies = get_object_taxonomies( $post->post_type );
+        foreach( $object_taxonomies as $taxonomy ) {
+            if ( is_object( $taxonomy ) && ( false == $taxonomy->public || false == $taxonomy->rewrite ) ) {
+                continue;
+            }
+
+            $terms = get_the_terms( $post->ID, $taxonomy );
+            if ( empty( $terms) || is_wp_error( $terms) ) {
+                continue;
+            }
+
+            foreach( $terms as $term ) {
+                $term_link = get_term_link( $term );
+
+                if ( ! is_wp_error( $term_link ) ) {
+                    array_push( $urls, $term_link );
+                }
+            }
+        }
+
+        // Author pages.
+        array_push(
+            $urls,
+            get_author_posts_url( get_post_field( 'post_author', $post->ID) ),
+            get_author_feed_link( get_post_field( 'post_author', $post->ID) )
+        );
+
+        // Archive pages.
+        if ( true == get_post_type_archive_link( $post->post_type ) ) {
+            array_push(
+                $urls,
+                get_post_type_archive_link( $post->post_type ),
+                get_post_type_archive_feed_link( $post->post_type )
+            );
+        }
+
+        // Home page if it shows posts.
+        $home_page_url = get_permalink( get_option( 'page_for_posts' ) );
+        if ( is_string( $home_page_url ) && ! empty( $home_page_url) && 'page' == get_option( 'show_on_front' ) ) {
+            array_push( $urls, $home_page_url );
+        }
+
+        return $urls;
     }
 
     protected static function get_aws_region() {
@@ -147,18 +203,33 @@ class Base {
         // Debug.
         self::write_log( "Full site invalidation with caller reference {$caller_reference} ");
 
+        // Trigger the invalidation.
+        self::create_invalidation( ['/*'], $caller_reference );
+    }
+
+    protected static function create_invalidation( $items, $caller_reference ) {
         // Get the client.
-        $client = self::get_aws_client();
-        $result = $client->createInvalidation([
-            'DistributionId' => self::get_distribution_id(),
-            'InvalidationBatch' => [
-                'CallerReference' => $caller_reference,
-                'Paths' => [
-                    'Items' => ['/*'],
-                    'Quantity' => 1,
-                ],
-            ],
+        $cloudfront_client = new CloudFrontClient([
+            'region' =>  self::get_aws_region(),
+            'version' => '2020-05-31',
         ]);
+
+        try {
+            $result = $cloudfront_client->createInvalidation([
+                'DistributionId' => self::get_distribution_id(),
+                'InvalidationBatch' => [
+                    'CallerReference' => $caller_reference,
+                    'Paths' => [
+                        'Items' => $items,
+                        'Quantity' => count( $items ),
+                    ],
+                ],
+            ]);
+        } catch ( CredentialsException $e ) {
+            self::write_log( $e->getMessage() );
+        } catch ( CloudFrontException $e ) {
+            self::write_log( $e->getMessage() );
+        }
     }
 
     protected static function write_log( $log ) {
