@@ -86,6 +86,10 @@ class Base {
      * Invalidate a post. Builds a list of URLs to invalidate.
      */
     public static function invalidate_post( $post ) {
+        if ( ! is_object( $post ) ) {
+            return;
+        }
+
         $permalink = get_permalink( $post );
 
         // Sanitize permalink for trashed post.
@@ -159,7 +163,7 @@ class Base {
 
         // Home page if it shows posts.
         $home_page_url = get_permalink( get_option( 'page_for_posts' ) );
-        if ( is_string( $home_page_url ) && ! empty( $home_page_url) && 'page' == get_option( 'show_on_front' ) ) {
+        if ( is_string( $home_page_url ) && ! empty( $home_page_url) && 'page' == get_option( 'show_on_front' ) && 'post' === $post->post_type ) {
             array_push( $urls, $home_page_url );
         }
 
