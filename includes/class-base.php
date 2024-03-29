@@ -167,6 +167,9 @@ class Base {
             array_push( $urls, $home_page_url );
         }
 
+        // Allow other plugins to modify.
+        $urls = apply_filters( 'evaporation_related_urls', $urls, $post );
+
         return $urls;
     }
 
