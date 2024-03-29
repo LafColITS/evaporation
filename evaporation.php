@@ -2,9 +2,9 @@
 /**
  * Plugin Name:     Evaporation
  * Plugin URI:      PLUGIN SITE HERE
- * Description:     PLUGIN DESCRIPTION HERE
+ * Description:     Evaporation is a cache invalidation plugin for WordPress sites that use AWS CloudFront as a full-site cache.
  * Author:          Charles Fulton
- * Author URI:      YOUR SITE HERE
+ * Author URI:      https://github.com/LafColITS
  * Text Domain:     evaporation
  * Domain Path:     /languages
  * Version:         0.1.0

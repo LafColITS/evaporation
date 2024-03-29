@@ -84,6 +84,10 @@ class Base {
 
     /**
      * Invalidate a post. Builds a list of URLs to invalidate.
+     *
+     * @param WP_Post $post the post to invalidate
+     * 
+     * @return Aws\Result object on success or string on failure
      */
     public static function invalidate_post( $post ) {
         if ( ! is_object( $post ) ) {
@@ -102,12 +106,20 @@ class Base {
 
         if ( in_array( "", $urls_to_invalidate) ) {
             self::write_log( "Request to invalidate {$permalink} requires full site purge" );
-            self::invalidate_site();
+            return self::invalidate_site();
         } else {
-            self::invalidate_urls( $urls_to_invalidate );
+            return self::invalidate_urls( $urls_to_invalidate );
         }
     }
 
+    /**
+     * Calculate the caller reference and invoke the invalidation.
+     *
+     * @param array $urls the URLs to invalidate
+     * @param string $caller_reference the caller reference
+     * 
+     * @return Aws\Result object on success or string on failure
+     */
     protected static function invalidate_urls( $urls, $caller_reference = '' ) {
         // Create the caller reference if not set.
         if ( ! $caller_reference ) {
@@ -117,7 +129,7 @@ class Base {
         self::write_log( "Invalidation for " . json_encode($urls) . " with caller reference {$caller_reference}" );
 
         // Trigger the invalidation.
-        self::create_invalidation( $urls, $caller_reference );
+        return self::create_invalidation( $urls, $caller_reference );
     }
 
     protected static function get_related_urls( $post ) {
@@ -201,6 +213,13 @@ class Base {
         }
     }
 
+    /**
+     * Create a full site invalidation.
+     *
+     * @param string $caller_reference Caller reference for the invalidation.
+     *
+     * @return Aws\Result object on success or string on failure
+     */
     public static function invalidate_site( $caller_reference = '' ) {
         // Create the caller reference if not set.
         if ( ! $caller_reference ) {
@@ -214,6 +233,14 @@ class Base {
         self::create_invalidation( ['/*'], $caller_reference );
     }
 
+    /**
+     * Creates an invalidation for the given paths.
+     *
+     * @param array $items all the URLs to invalidate in the batch
+     * @param string $caller_reference the calculated caller reference
+     *
+     * @return Aws\Result object on success or string on failure
+     */
     protected static function create_invalidation( $items, $caller_reference ) {
         // Get the client.
         $cloudfront_client = new CloudFrontClient([
