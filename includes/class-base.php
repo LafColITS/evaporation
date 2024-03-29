@@ -232,10 +232,10 @@ class Base {
                     ],
                 ],
             ]);
-        } catch ( CredentialsException $e ) {
+            return $result;
+        } catch ( CredentialsException | CloudFrontException | InvalidArgumentException $e ) {
             self::write_log( $e->getMessage() );
-        } catch ( CloudFrontException $e ) {
-            self::write_log( $e->getMessage() );
+            return $e;
         }
     }
 
