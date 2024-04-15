@@ -1,9 +1,9 @@
 # Evaporation #
 **Contributors:** [mackensen](https://profiles.wordpress.org/mackensen/)  
 **Tags:** cloudfront, cache  
-**Requires at least:** 4.5  
-**Tested up to:** 5.8.3  
-**Requires PHP:** 5.6  
+**Requires at least:** 6.2  
+**Tested up to:** 6.2.3  
+**Requires PHP:** 7.4  
 **Stable tag:** 0.1.0  
 **License:** GPLv2 or later  
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html  
@@ -45,6 +45,20 @@ The `evaporation_related_urls` filter allows you to add URLs to be invalidated w
 
 * `$urls`: array of related URLs to be invalidated
 * `$post`: the `WP_Post` object representing the post
+
+## WP-CLI integration ##
+The plugin includes a single WP-CLI command for invalidating a post:
+
+```
+# Invalidate a post
+wp evaporation invalidate post 8082
+Invalidation created for /author/somebody/
+Invalidation created for /author/somebody/feed/
+Invalidation created for /2024/03/28/your-post/
+Invalidation created for /category/your-category/
+Invalidation created for /
+Success: Invalidation ID IDBP36WW3PLXW6WD3AC5UQJRF5 created
+```
 
 ## Changelog ##
 
