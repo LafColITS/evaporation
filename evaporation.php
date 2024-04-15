@@ -12,11 +12,12 @@
  * @package         Evaporation
  */
 
+// Load AWS SDK.
 require 'vendor/autoload.php';
 require 'includes/class-base.php';
 
-add_action( 'init', array( 'Evaporation\Base' , 'init_action' ) );
+add_action( 'init', array( 'Evaporation\Base', 'init_action' ) );
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
-    require_once dirname( __FILE__ ) . '/cli/evaporation-command.php';
+	require_once __DIR__ . '/cli/evaporation-command.php';
 }

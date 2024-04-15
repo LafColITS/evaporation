@@ -13,7 +13,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        php74 = (phps.packages.${system}.php74.buildEnv {
+        php83 = (phps.packages.${system}.php83.buildEnv {
           extensions = ({ enabled, all }: enabled ++ (with all; [
           ]));
         });
@@ -23,8 +23,8 @@
           buildInputs = [
             pkgs.nodejs_20
             pkgs.yarn
-            php74
-            php74.packages.composer
+            php83
+            php83.packages.composer
           ];
           shellHook = ''
             yarn

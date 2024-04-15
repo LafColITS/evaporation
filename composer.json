@@ -12,8 +12,18 @@
     "require": {
         "aws/aws-sdk-php": "^3.3"
     },
+    "require-dev": {
+        "wp-coding-standards/wpcs": "dev-develop",
+        "dealerdirect/phpcodesniffer-composer-installer": "^0.7.0"
+    },
     "scripts": {
         "pre-autoload-dump": "Aws\\Script\\Composer\\Composer::removeUnusedServices"
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     },
     "extra": {
         "aws/aws-sdk-php": [
