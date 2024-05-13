@@ -62,7 +62,7 @@ Success: Invalidation ID IDBP36WW3PLXW6WD3AC5UQJRF5 created
 
 == Changelog ==
 
-= Unreleased =
+= 0.1.0 =
 * Initial public push
 
 == License ==
