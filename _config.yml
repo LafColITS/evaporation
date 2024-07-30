@@ -21,7 +21,7 @@
 title: Evaporation
 description: >- # this means to ignore newlines until "baseurl:"
   Evaporation is maintained by ITS at Lafayette College in Easton, Pennsylvania.
-baseurl: "" # the subpath of your site, e.g. /blog
+baseurl: "/evaporation" # the subpath of your site, e.g. /blog
 url: "https://its.lafayette.edu" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  LafColITS
 
